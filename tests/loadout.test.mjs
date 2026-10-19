@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {Game,LEVELS} from '../src/engine.js';
 import {snapshotGame,restoreGame,emptySave,decodeSave,encodeSave} from '../src/storage.js';
 test('equipped cards enforce slot capacity, uniqueness and actual placement',()=>{
- const g=new Game(7);assert.throws(()=>g.equip(LEVELS[7].cards,6));assert.throws(()=>g.equip(['fire','fire']));assert.throws(()=>g.equip([]));assert.throws(()=>g.equip(['seven']));
+ const g=new Game(7);assert.throws(()=>g.equip(LEVELS[7].cards,6));assert.throws(()=>g.equip(['fire','fire']));assert.throws(()=>g.equip([]));assert.throws(()=>g.equip(['unknown']));
  g.equip(['water','vine','tall']);g.energy=1000;assert.equal(g.place('fire',2,0),false);assert.ok(g.place('water',2,0));assert.ok(g.place('tall',2,1));assert.equal(g.plants[1].hp,8000);
 });
 test('chosen order, capacity, deployed water and slow state survive export and restore',()=>{

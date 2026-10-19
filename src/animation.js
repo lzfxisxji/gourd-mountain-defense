@@ -1,6 +1,11 @@
 // Separate drawn poses share a ground anchor. Coordinates are source-image pixels.
-export const WORLD_SCALE={nezha:1,pangolin:1,tall:1,water:1.18,fire:1.18,vine:1.18,wall:1.12,frog:1.12};
+export const WORLD_SCALE={seven:1.18,erwa:1.18,nezha:1,pangolin:1,tall:1,water:1.18,fire:1.18,vine:1.18,wall:1.12,frog:1.12};
 export const POSES={
+ erwaIdle:{file:'erwa-poses',rect:[45,85,455,725],pivot:[275,798],scale:.165},
+ erwaPrepare:{file:'erwa-poses',rect:[560,100,490,710],pivot:[810,798],scale:.165},
+ erwaRelease:{file:'erwa-poses',rect:[1070,160,700,650],pivot:[1400,798],scale:.165},
+ snakeIdle:{file:'snake-poses',rect:[40,0,670,1024],pivot:[360,1008],scale:.2},
+ snakeCast:{file:'snake-poses',rect:[720,0,816,1024],pivot:[1170,1008],scale:.2},
  batFlyA:{file:'bat-poses',rect:[0,0,768,1024],pivot:[430,850],scale:.19},
  batFlyB:{file:'bat-poses',rect:[768,0,768,1024],pivot:[1198,850],scale:.19},
  nezhaIdle:{file:'nezha-poses',rect:[25,20,485,810],pivot:[270,815],scale:.17},
@@ -38,6 +43,9 @@ export const POSES={
  arm:{file:'frog-parts',rect:[1690,0,340,723],pivot:[1850,712],scale:.16}
 };
 export function plantPose(p){
+ if(p.freezeLeft>0)return {seven:p.refineLeft>0?'sevenRefine':'sevenIdle',erwa:'erwaIdle',nezha:'nezhaIdle',pangolin:p.armed?'pangolinReady':'pangolinBuried',tall:'tallIdle',water:'waterIdle',fire:'fireIdle',vine:'vineIdle',wall:'wallIdle'}[p.type];
+ if(p.type==='seven')return p.action>0?'sevenAbsorb':p.refineLeft>0?'sevenRefine':'sevenIdle';
+ if(p.type==='erwa')return p.action>0?'erwaRelease':p.windup>0?'erwaPrepare':'erwaIdle';
  if(p.type==='nezha')return p.spent||p.action>0?'nezhaCast':p.aiming?'nezhaReady':'nezhaIdle';
  if(p.type==='pangolin')return p.spent?'pangolinTrigger':p.armed?'pangolinReady':'pangolinBuried';
  if(p.type==='tall')return p.hit>0||p.hp<2800?'tallHurt':p.defending?'tallDefend':'tallIdle';
@@ -47,6 +55,7 @@ export function plantPose(p){
  return p.hit>0||p.hp<1400?'wallHurt':p.defending?'wallDefend':'wallIdle';
 }
 export function enemyPose(e,time){
+ if(e.type==='snake')return e.castLeft>0||(e.eating&&e.attackClock>=.25&&e.attackClock<.64)?'snakeCast':'snakeIdle';
  if(e.type==='bat')return Math.floor(time*5+(e.phase||0))%2?'batFlyB':'batFlyA';
  if(e.eating&&e.attackClock>=.25&&e.attackClock<.64)return e.damaged?'frogBite':'frogAttack';
  const stride=Math.floor(time*3+(e.phase||0))%2;
