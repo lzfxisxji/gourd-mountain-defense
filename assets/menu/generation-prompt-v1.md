@@ -1,0 +1,13 @@
+# 主菜单预览 v1
+
+生成方式：内置 image_gen。此文件对应美术预览，尚无按钮交互。
+
++Use case: ui-mockup
+Asset type: polished main menu screen preview for a Chinese Calabash Brothers themed 2D tower defense game, landscape 16:9, full bleed.
+Create a beautiful actual game main menu, inspired by Plants vs Zombies' whimsical environmental main menu composition with large integrated sign buttons on the right, translated entirely into the world of the classic Chinese animation 葫芦兄弟. Match hand-painted Chinese cel animation scenery, expressive ink contours, flat gouache shading, layered jade mountains and swirling white clouds, nostalgic paper texture. Warm morning light, readable clear polished game UI, not photorealistic or 3D.
+Composition: left half contains a rustic grandfather cottage, a large lush gourd trellis with colorful hanging gourds, a winding garden path and subtle misty mountains behind. Bottom left, three recognizable Calabash Brothers children stand heroically: iconic black hair with two upward pointed side tufts, little gourd crown on head, leaf collar, sleeveless cropped vest exposing belly, leaf skirt, bare arms and legs; red-clad eldest muscular child, yellow-clad third child with firm defensive pose, green-clad fourth child holding a tiny floating fireball. Their style should look authentically like the classic cartoon characters. Small stylized green frog demon with bulging eyes peeks around a rock at far lower right, away from buttons.
+Right half: three LARGE distinct horizontal environmental sign buttons STACKED VERTICALLY, occupying x=57%-93%, y=29%-76%. First button largest, made of warm carved wood and green vines with a small golden gourd detail; text EXACTLY "闯关模式". Second button pale blue-grey carved stone with flowing-water motif, text EXACTLY "无尽模式". Third button warm amber wood with small decorative leaves, text EXACTLY "趣味挑战". The three signs are clearly clickable, visually separated with generous spacing, excellent readable bold Chinese lettering with dark outline, not tiny text. NO fourth main mode.
+Top center-left large attractive game title EXACTLY "葫芦兄弟" with small subtitle under it EXACTLY "守护葫芦山". Title integrated into an irregular wooden plaque and gourd vine frame.
+Top LEFT CORNER a modest clearly readable small wooden button with folder motif and exact text "读取存档", located well above cottage and clearly separate from title.
+BOTTOM RIGHT CORNER a small clearly clickable carved wooden button exact text "退出游戏", separate from main three buttons and frog.
+Only these Chinese text strings, no English, no extra unreadable labels, no watermark, no loading screen, no device frame, no grid lawn. Keep game menu approachable and readable, strong decorative framing, no clutter covering buttons.
