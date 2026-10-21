@@ -15,12 +15,16 @@ export const LEVELS={
  7:{name:'1-7',title:'碧水退妖潮',rows:[...rows],cards:['vine','fire','wall','nezha','pangolin','tall','water'],reward:'seven',schedule:waves(38,29,4.1,191),wave:191},
  8:{name:'1-8',title:'空陆夹击',rows:[...rows],cards:[...lateCards,'seven'],reward:'erwa',schedule:waves(42,30,4,211),wave:211},
  9:{name:'1-9',title:'妖洞前哨',rows:[...rows],cards:[...lateCards,'seven','erwa'],reward:null,schedule:waves(46,30,3.9,226),wave:226},
- 10:{name:'1-10',title:'决战蛇精',rows:[...rows],cards:[...lateCards,'seven','erwa'],reward:null,schedule:[...waves(45,32,4,222),{t:205,row:2,type:'snake'}].sort((a,b)=>a.t-b.t),wave:205}
+ 10:{name:'1-10',title:'决战蛇精',rows:[...rows],cards:[...lateCards,'seven','erwa'],reward:'six',schedule:[...waves(45,32,4,222),{t:205,row:2,type:'snake'}].sort((a,b)=>a.t-b.t),wave:205}
 };
 // Preserve authored timing and total counts; introduce flyers among later waves.
 for(const level of [6,7,8,9,10])LEVELS[level].schedule=LEVELS[level].schedule.map((spawn,i)=>({...spawn,...(!spawn.type&&i>5&&i%(level===6?9:level>=8?6:7)===5?{type:'bat'}:{})}));
 export const LAST_LEVEL=Math.max(...Object.keys(LEVELS).map(Number));
+// Replace late ground spawns, keeping wave timing and total counts stable.
+for(const [level,indices] of [[9,[27,44]],[10,[24,40]]])for(const i of indices)LEVELS[level].schedule[i].type='scorpion';
 export function adventureLevel(save){
  if(save?.battle&&LEVELS[save.battle.level])return save.battle.level;
  return Math.min(LAST_LEVEL,Math.max(1,(save?.completed||0)+1));
 }
+
+for(const [level,indices] of [[8,[20,36]],[9,[18,36]],[10,[16,34]]])for(const i of indices)LEVELS[level].schedule[i].type='centipede';

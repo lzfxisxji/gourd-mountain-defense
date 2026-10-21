@@ -1,6 +1,20 @@
 // Separate drawn poses share a ground anchor. Coordinates are source-image pixels.
-export const WORLD_SCALE={seven:1.18,erwa:1.18,nezha:1,pangolin:1,tall:1,water:1.18,fire:1.18,vine:1.18,wall:1.12,frog:1.12};
+export const WORLD_SCALE={wukong:1,blackcat:1,six:1.18,seven:1.18,erwa:1.18,nezha:1,pangolin:1,tall:1,water:1.18,fire:1.18,vine:1.18,wall:1.12,frog:1.12};
 export const POSES={
+ centipedeWalk:{file:'centipede-poses',rect:[20,165,765,775],pivot:[580,925],scale:.16,clip:[[20,165],[765,165],[765,740],[785,740],[785,940],[20,940]]},
+ centipedeChop:{file:'centipede-poses',rect:[765,65,765,875],pivot:[1300,925],scale:.16,clip:[[765,65],[1530,65],[1530,940],[785,940],[785,740],[765,740]]},
+ scorpionWalk:{file:'scorpion-poses',rect:[10,165,565,590],pivot:[355,745],scale:.26},
+ scorpionWindup:{file:'scorpion-poses',rect:[650,175,555,585],pivot:[945,745],scale:.26,clip:[[650,175],[1205,175],[1205,590],[1130,670],[1065,710],[1065,760],[650,760]]},
+ scorpionSlash:{file:'scorpion-poses',rect:[1065,350,735,410],pivot:[1575,745],scale:.26,clip:[[1205,350],[1800,350],[1800,760],[1065,760],[1065,710],[1130,670],[1205,590]]},
+ wukongIdle:{file:'wukong-poses',rect:[50,70,390,745],pivot:[250,800],scale:.18},
+ wukongWindup:{file:'wukong-poses',rect:[565,110,570,710],pivot:[820,800],scale:.18},
+ wukongThrow:{file:'wukong-poses',rect:[1140,185,630,630],pivot:[1420,800],scale:.18},
+ blackcatIdle:{file:'blackcat-poses',rect:[40,130,500,680],pivot:[300,800],scale:.18},
+ blackcatAim:{file:'blackcat-poses',rect:[585,170,565,640],pivot:[810,800],scale:.18},
+ blackcatShoot:{file:'blackcat-poses',rect:[1135,180,639,630],pivot:[1370,800],scale:.18},
+ sixIdle:{file:'six-poses',rect:[35,85,510,730],pivot:[280,800],scale:.165},
+ sixLeap:{file:'six-poses',rect:[550,65,570,660],pivot:[830,710],scale:.165},
+ sixStrike:{file:'six-poses',rect:[1105,260,655,555],pivot:[1450,800],scale:.165},
  erwaIdle:{file:'erwa-poses',rect:[45,85,455,725],pivot:[275,798],scale:.165},
  erwaPrepare:{file:'erwa-poses',rect:[560,100,490,710],pivot:[810,798],scale:.165},
  erwaRelease:{file:'erwa-poses',rect:[1070,160,700,650],pivot:[1400,798],scale:.165},
@@ -43,7 +57,10 @@ export const POSES={
  arm:{file:'frog-parts',rect:[1690,0,340,723],pivot:[1850,712],scale:.16}
 };
 export function plantPose(p){
- if(p.freezeLeft>0)return {seven:p.refineLeft>0?'sevenRefine':'sevenIdle',erwa:'erwaIdle',nezha:'nezhaIdle',pangolin:p.armed?'pangolinReady':'pangolinBuried',tall:'tallIdle',water:'waterIdle',fire:'fireIdle',vine:'vineIdle',wall:'wallIdle'}[p.type];
+ if(p.freezeLeft>0)return {wukong:'wukongIdle',blackcat:'blackcatIdle',six:'sixIdle',seven:p.refineLeft>0?'sevenRefine':'sevenIdle',erwa:'erwaIdle',nezha:'nezhaIdle',pangolin:p.armed?'pangolinReady':'pangolinBuried',tall:'tallIdle',water:'waterIdle',fire:'fireIdle',vine:'vineIdle',wall:'wallIdle'}[p.type];
+ if(p.type==='wukong')return p.action>0?'wukongThrow':p.timer<.3?'wukongWindup':'wukongIdle';
+ if(p.type==='blackcat')return p.action>0?'blackcatShoot':p.windup>0?'blackcatAim':'blackcatIdle';
+ if(p.type==='six')return p.spent?'sixLeap':'sixIdle';
  if(p.type==='seven')return p.action>0?'sevenAbsorb':p.refineLeft>0?'sevenRefine':'sevenIdle';
  if(p.type==='erwa')return p.action>0?'erwaRelease':p.windup>0?'erwaPrepare':'erwaIdle';
  if(p.type==='nezha')return p.spent||p.action>0?'nezhaCast':p.aiming?'nezhaReady':'nezhaIdle';
@@ -55,6 +72,8 @@ export function plantPose(p){
  return p.hit>0||p.hp<1400?'wallHurt':p.defending?'wallDefend':'wallIdle';
 }
 export function enemyPose(e,time){
+ if(e.type==='centipede')return e.eating&&e.attackClock>=.25&&e.attackClock<.65?'centipedeChop':'centipedeWalk';
+ if(e.type==='scorpion')return !e.eating?'scorpionWalk':e.attackClock<.9?'scorpionWindup':e.attackClock<1.45?'scorpionSlash':'scorpionWalk';
  if(e.type==='snake')return e.castLeft>0||(e.eating&&e.attackClock>=.25&&e.attackClock<.64)?'snakeCast':'snakeIdle';
  if(e.type==='bat')return Math.floor(time*5+(e.phase||0))%2?'batFlyB':'batFlyA';
  if(e.eating&&e.attackClock>=.25&&e.attackClock<.64)return e.damaged?'frogBite':'frogAttack';
