@@ -68,3 +68,13 @@
 蝎子大王已加入：2000 生命，移动速度 8，近身举刀蓄力 0.9 秒后挥砍，单次 2000 伤害，攻击周期 3 秒，满血三娃可承受两刀。水弹减慢移动及挥刀计时；未增加额外爆炸抗性。1-9、1-10 各替换两只后段普通妖怪，出怪总数与时间保持；图鉴含行走、举刀、挥砍演示，战前预览和存档恢复均支持。专项浏览器检查运行 node tests/browser-scorpion.cjs。
 
 蜈蚣精已加入：600 生命，中等移动速度 18，双斧近身攻击每秒一次，每次 200 伤害。生命降至 300 或以下时，体型宽高翻倍，移动速度变为 22.5（原来的 1.25 倍），攻击伤害和间隔保持。水弹减速照常，半血形态、攻击阶段与死亡体型支持存档恢复。1-8 至 1-10 各替换两只后段普通妖怪，图鉴含挥斧和体型变化演示；战前预览已适配五种妖怪。浏览器专项验证：node tests/browser-centipede.cjs。
+
+## Windows 桌面版与自动更新
+
+[下载最新安装版](https://github.com/lzfxisxji/gourd-mountain-defense/releases/latest)。安装一次后可检查更新、查看说明、下载更新并保存战局后重启安装。游戏离线可玩，更新来自 GitHub Releases；免安装版需先安装此版本才能使用自动更新。
+
+存档保存在当前 Windows 用户的 `%APPDATA%\GourdMountainDefense`，更新不清除存档，支持游戏内 JSON 导入/导出与网页版迁移。F11 切换全屏，Esc 退出全屏。
+
+本地执行 `npm run build:exe` 或双击“重新打包EXE.cmd”生成安装版，输出在 `release/版本号`。`npm run build:portable` 生成免安装版。后续递增版本号、提交源码并推送对应 `v版本号` 标签，GitHub Actions 自动构建并发布安装包、blockmap、latest.yml。详见 [桌面版说明](desktop/使用说明.md)。
+
+桌面验证：`node tests/desktop-smoke.cjs release/0.2.0/win-unpacked/GourdMountainDefense.exe`；升级验证：`node tests/update-e2e.cjs`，均使用独立测试存档。更新实现采用 [electron-updater 官方流程](https://www.electron.build/docs/features/auto-update/)，客户端不包含 GitHub 发布凭据。

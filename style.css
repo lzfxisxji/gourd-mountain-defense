@@ -80,3 +80,7 @@ canvas.reward{background:none;width:120px;height:142px;display:block}.book-list{
 .enemy-figures:has(canvas:nth-child(5)){display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:1fr 1fr;height:68%}
 .enemy-figures:has(canvas:nth-child(5)) canvas:nth-child(n){position:static;width:100%;height:100%;transform:none;min-height:0;min-width:0}
 .index-gallery:has(canvas:nth-child(5)) canvas{width:20%}
+.desktop-update-button{position:absolute;right:2%;top:3%;border:2px solid #72502d;border-radius:8px;background:#ead29b;color:#47311b;padding:9px 15px;font:700 16px KaiTi,serif;cursor:pointer}
+.update-dialog{width:min(560px,85vw);max-height:80vh;overflow:auto;border:5px solid #8c693c;border-radius:18px;padding:26px;background:#f2e4ba;color:#4d351e;box-shadow:0 12px 60px #0007;font-family:KaiTi,serif}
+.update-dialog::backdrop{background:#102b24a8}
+.update-dialog h2{margin-top:0}.update-dialog progress{width:100%;accent-color:#66873d}.update-notes{white-space:pre-wrap;font:16px/1.7 KaiTi,serif;max-height:30vh;overflow:auto}.update-actions{display:flex;gap:10px;flex-wrap:wrap}.update-actions button{padding:10px 15px;border:2px solid #735230;border-radius:7px;background:#688344;color:#fff4ce;font:16px KaiTi,serif;cursor:pointer}.update-actions button:disabled{opacity:.5}.update-dialog [hidden]{display:none!important}

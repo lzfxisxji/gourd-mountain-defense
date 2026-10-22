@@ -1,4 +1,5 @@
 import {advanceBattle} from './timing.js';
+import {initDesktopUpdates} from './desktop-updates.js';
 import {SLOT_PRICES,buySlot,victoryCoins,BLACKCAT_PRICE,buyBlackcat,WUKONG_PRICE,buyWukong} from './economy.js';
 import {Game,GRID,CHARACTERS,LEVELS,MONSTERS,monsterScale} from './engine.js';
 import {LAST_LEVEL,adventureLevel} from './levels.js';
@@ -94,7 +95,7 @@ $('.almanac-button').onclick=()=>openAlmanac();
 $('.load').onclick=openSaveMenu;
 $('.endless').onclick=()=>modal('无尽模式', '<p>此模式暂未开放。</p><p>当前版本可体验 1-1 ～ 1-10 十个闯关关卡。</p>',[{text:'进入闯关',action:enterAdventure},{text:'返回菜单',secondary:true,action:closeModal}]);
 $('.challenge').onclick=()=>modal('趣味挑战','<p>此模式暂未开放。</p><p>后续可加入限定阵容、低资源与特殊敌潮。</p>',[{text:'进入闯关',action:enterAdventure},{text:'返回菜单',secondary:true,action:closeModal}]);
-$('.exit').onclick=()=>modal('退出游戏', '<p>通关进度已保存在本机浏览器。</p>',[{text:'退出',action:()=>{try{window.close();}catch{}modal('游戏已退出','<p>可以安全关闭此标签页。</p>',[{text:'返回游戏',action:menu}]);}},{text:'返回菜单',secondary:true,action:closeModal}]);
+$('.exit').onclick=()=>modal('退出游戏', '<p>通关进度已保存在本机。</p>',[{text:'退出',action:()=>{try{window.close();}catch{}modal('游戏已退出','<p>可以安全关闭此标签页。</p>',[{text:'返回游戏',action:menu}]);}},{text:'返回菜单',secondary:true,action:closeModal}]);
 function start(level){
  if(!LEVELS[level])return;
  const pool=['vine','fire','wall','nezha','pangolin','tall','water','seven','erwa','six','blackcat','wukong'].filter(id=>isCharacterUnlocked(id,save.completed,save.unlocks)&&CHARACTERS[id]);
@@ -248,4 +249,8 @@ function finish(){
 function frame(now){const dt=Math.min((now-last)/1000||0,.05);last=now;if(game){if(!paused){advanceBattle(game,dt,speed);for(const e of game.events.splice(0)){if(e.type==='freeze')toast('蛇精施展冰封！');if(e.type==='wave')waveUntil=game.time+4;if(['shoot','collect','mower','won','lost','cast','blast','mine'].includes(e.type))tone(e.type);}if(game.status!=='playing')finish();else if(game.time-lastAutoSave>=10)checkpoint();updateHud();}draw();}drawBookPreview(now);requestAnimationFrame(frame);}requestAnimationFrame(frame);
 // Explicit QA flag: deterministic engine access for browser integration tests, absent in normal sessions.
 if(new URLSearchParams(location.search).has('qa'))window.__qa={get game(){return game;},start,select,get paused(){return paused;},get save(){return save;},freeze(value=true){paused=value;},render:draw,step(seconds){if(!game||paused)return;for(let t=0;t<seconds&&game.status==='playing';t+=.05)game.step(.05);if(game.status!=='playing')finish();else if(game.time-lastAutoSave>=10)checkpoint();updateHud();draw();}};
+if(window.gameUpdates){
+ window.prepareGameUpdate=()=>{paused=true;return game?.status==='playing'?checkpoint():persist();};
+ initDesktopUpdates({pauseForUpdates:()=>{const previous=paused;if(game?.status==='playing'){paused=true;checkpoint();}return()=>{paused=previous;};},onAvailable:toast});
+}
 

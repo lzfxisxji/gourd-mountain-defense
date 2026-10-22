@@ -1,0 +1,9 @@
+extends: ./electron-builder.yml
+appId: cn.gourdmountain.defense.updatetest
+productName: GourdUpdateTest
+extraMetadata:
+  version: 0.2.1
+directories:
+  output: release/update-test
+nsis:
+  shortcutName: GourdUpdateTest

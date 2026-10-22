@@ -1,0 +1,38 @@
+appId: cn.gourdmountain.defense
+productName: 守护葫芦山
+asar: true
+directories:
+  output: release/${version}
+files:
+  - index.html
+  - style.css
+  - src/**/*.js
+  - assets/**/*.png
+  - desktop/*.cjs
+  - desktop/icon.ico
+  - package.json
+  - '!assets/**/*-reference*.png'
+  - '!assets/maps/*preview*.png'
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: desktop/icon.ico
+  executableName: GourdMountainDefense
+  signExecutable: false
+portable:
+  artifactName: 守护葫芦山-${version}-Windows-x64.exe
+  requestExecutionLevel: user
+nsis:
+  artifactName: GourdMountainDefense-Setup-${version}-x64.exe
+  oneClick: true
+  perMachine: false
+  allowElevation: false
+  deleteAppDataOnUninstall: false
+  shortcutName: 守护葫芦山
+  runAfterFinish: true
+publish:
+  provider: github
+  owner: lzfxisxji
+  repo: gourd-mountain-defense
+  releaseType: release
