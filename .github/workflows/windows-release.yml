@@ -28,4 +28,6 @@ jobs:
         run: |
           $version = (Get-Content package.json | ConvertFrom-Json).version
           $folder = "release/$version"
+          gh release view "v$version" --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -eq 0) { Write-Output "Release v$version already published; leaving existing assets unchanged."; exit 0 }
           gh release create "v$version" "$folder/GourdMountainDefense-Setup-$version-x64.exe" "$folder/GourdMountainDefense-Setup-$version-x64.exe.blockmap" "$folder/latest.yml" --verify-tag --title "守护葫芦山 v$version" --generate-notes --latest
