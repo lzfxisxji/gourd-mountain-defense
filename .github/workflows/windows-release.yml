@@ -1,5 +1,6 @@
 name: Windows release
 on:
+  workflow_dispatch:
   push:
     tags: ['v*']
 permissions:
@@ -19,7 +20,7 @@ jobs:
         shell: pwsh
         run: |
           $version = (Get-Content package.json | ConvertFrom-Json).version
-          if ($env:GITHUB_REF_NAME -ne "v$version") { throw "Tag must match package.json version" }
+          if ($env:GITHUB_EVENT_NAME -eq "push" -and $env:GITHUB_REF_NAME -ne "v$version") { throw "Tag must match package.json version" }
       - run: npm run build:exe
       - name: Publish installer and update manifest
         env:
