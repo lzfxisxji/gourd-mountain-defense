@@ -19,6 +19,16 @@ export const LEVELS={
 };
 // Preserve authored timing and total counts; introduce flyers among later waves.
 for(const level of [6,7,8,9,10])LEVELS[level].schedule=LEVELS[level].schedule.map((spawn,i)=>({...spawn,...(!spawn.type&&i>5&&i%(level===6?9:level>=8?6:7)===5?{type:'bat'}:{})}));
+// Chapter two: the same five-lane rules inside the snake queen's cave.
+const caveTitles=['潜入蛇窟','洞顶暗影','石廊伏兵','双王守门','如意深殿'];
+for(let n=1;n<=5;n++){
+ const schedule=waves(20+n*3,30,5.1-n*.15,168+n*11).map((spawn,i)=>({...spawn,...(i>=7&&i%7===0?{type:'bat'}:i>=12&&i%11===1?{type:'centipede'}:{})}));
+ if(n>=3)schedule.push({t:145+n*6,row:n%5,type:'scorpion'});
+ if(n===4)schedule.push({t:190,row:1,type:'scorpion'});
+ if(n===5)schedule.push({t:211,row:2,type:'snake'});
+ LEVELS[10+n]={name:`2-${n}`,title:caveTitles[n-1],chapter:2,region:'蛇窟 · 蛇精老巢',map:'cave',rows:[...rows],cards:[...lateCards,'seven','erwa','six'],reward:null,schedule:schedule.sort((a,b)=>a.t-b.t),wave:n===5?211:168+n*11};
+}
+for(const cfg of Object.values(LEVELS)){cfg.chapter??=1;cfg.region??='木境 · 葫芦藤园';cfg.map??='wood';}
 export const LAST_LEVEL=Math.max(...Object.keys(LEVELS).map(Number));
 // Replace late ground spawns, keeping wave timing and total counts stable.
 for(const [level,indices] of [[9,[27,44]],[10,[24,40]]])for(const i of indices)LEVELS[level].schedule[i].type='scorpion';

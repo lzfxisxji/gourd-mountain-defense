@@ -1,6 +1,10 @@
 // Separate drawn poses share a ground anchor. Coordinates are source-image pixels.
-export const WORLD_SCALE={wukong:1,blackcat:1,six:1.18,seven:1.18,erwa:1.18,nezha:1,pangolin:1,tall:1,water:1.18,fire:1.18,vine:1.18,wall:1.12,frog:1.12};
+export const WORLD_SCALE={shuke:1,beta:1,scorpion:1.5,wukong:1,blackcat:1,six:1.18,seven:1.18,erwa:1.18,nezha:1,pangolin:1,tall:1,water:1.18,fire:1.18,vine:1.18,wall:1.12,frog:1.12};
 export const POSES={
+ shukeIdle:{file:'shuke-helicopter-poses',rect:[20,20,860,685],pivot:[550,685],scale:.18},
+ shukeDrop:{file:'shuke-helicopter-poses',rect:[900,20,866,675],pivot:[1425,685],scale:.18},
+ betaIdle:{file:'beta-tank-poses',rect:[70,80,790,780],pivot:[440,850],scale:.16},
+ betaFire:{file:'beta-tank-poses',rect:[895,80,881,780],pivot:[1250,850],scale:.16},
  centipedeWalk:{file:'centipede-poses',rect:[20,165,765,775],pivot:[580,925],scale:.16,clip:[[20,165],[765,165],[765,740],[785,740],[785,940],[20,940]]},
  centipedeChop:{file:'centipede-poses',rect:[765,65,765,875],pivot:[1300,925],scale:.16,clip:[[765,65],[1530,65],[1530,940],[785,940],[785,740],[765,740]]},
  scorpionWalk:{file:'scorpion-poses',rect:[10,165,565,590],pivot:[355,745],scale:.26},
@@ -57,7 +61,9 @@ export const POSES={
  arm:{file:'frog-parts',rect:[1690,0,340,723],pivot:[1850,712],scale:.16}
 };
 export function plantPose(p){
- if(p.freezeLeft>0)return {wukong:'wukongIdle',blackcat:'blackcatIdle',six:'sixIdle',seven:p.refineLeft>0?'sevenRefine':'sevenIdle',erwa:'erwaIdle',nezha:'nezhaIdle',pangolin:p.armed?'pangolinReady':'pangolinBuried',tall:'tallIdle',water:'waterIdle',fire:'fireIdle',vine:'vineIdle',wall:'wallIdle'}[p.type];
+ if(p.freezeLeft>0)return {shuke:'shukeIdle',beta:'betaIdle',wukong:'wukongIdle',blackcat:'blackcatIdle',six:'sixIdle',seven:p.refineLeft>0?'sevenRefine':'sevenIdle',erwa:'erwaIdle',nezha:'nezhaIdle',pangolin:p.armed?'pangolinReady':'pangolinBuried',tall:'tallIdle',water:'waterIdle',fire:'fireIdle',vine:'vineIdle',wall:'wallIdle'}[p.type];
+ if(p.type==='shuke')return p.action>0?'shukeDrop':'shukeIdle';
+ if(p.type==='beta')return p.action>0?'betaFire':'betaIdle';
  if(p.type==='wukong')return p.action>0?'wukongThrow':p.timer<.3?'wukongWindup':'wukongIdle';
  if(p.type==='blackcat')return p.action>0?'blackcatShoot':p.windup>0?'blackcatAim':'blackcatIdle';
  if(p.type==='six')return p.spent?'sixLeap':'sixIdle';
@@ -72,6 +78,7 @@ export function plantPose(p){
  return p.hit>0||p.hp<1400?'wallHurt':p.defending?'wallDefend':'wallIdle';
 }
 export function enemyPose(e,time){
+ if(e.netLeft>0){time=0;e={...e,eating:false,phase:0};}
  if(e.type==='centipede')return e.eating&&e.attackClock>=.25&&e.attackClock<.65?'centipedeChop':'centipedeWalk';
  if(e.type==='scorpion')return !e.eating?'scorpionWalk':e.attackClock<.9?'scorpionWindup':e.attackClock<1.45?'scorpionSlash':'scorpionWalk';
  if(e.type==='snake')return e.castLeft>0||(e.eating&&e.attackClock>=.25&&e.attackClock<.64)?'snakeCast':'snakeIdle';

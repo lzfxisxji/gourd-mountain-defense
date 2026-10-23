@@ -18,9 +18,9 @@ test('real mine and aimed flame each consume only half of snake full hp',()=>{
  const g=new Game(7);g.energy=1000;g.place('pangolin',2,4);const p=g.plants[0];p.armLeft=0;p.armed=true;const e=snake(g,GRID.x+4.5*GRID.cw+30);g.step(.05);assert.equal(e.hp,500);assert.ok(p.spent);
  g.place('nezha',2,0);assert.ok(g.castFire(g.plants[1].id,2,4));advance(g,.4);assert.equal(e.hp,0);
 });
-test('chapter advances to ten and snake is scheduled only in the final level',()=>{
- assert.equal(LAST_LEVEL,10);assert.equal(adventureLevel({completed:7}),8);assert.equal(adventureLevel({completed:9}),10);
- for(const level of Object.keys(LEVELS).map(Number))assert.equal(LEVELS[level].schedule.filter(e=>e.type==='snake').length,level===10?1:0);
+test('chapter progression crosses into cave and snake remains in chapter finales',()=>{
+ assert.equal(LAST_LEVEL,15);assert.equal(adventureLevel({completed:10}),11);assert.equal(adventureLevel({completed:15}),15);assert.equal(adventureLevel({completed:7}),8);assert.equal(adventureLevel({completed:9}),10);
+ for(const level of Object.keys(LEVELS).map(Number))assert.equal(LEVELS[level].schedule.filter(e=>e.type==='snake').length,[10,15].includes(level)?1:0);
  const g=new Game(10);g.time=204.99;g.spawned=g.cfg.schedule.findIndex(s=>s.type==='snake');g.step(.05);assert.equal(g.enemies.find(e=>e.type==='snake').hp,1000);
 });
 test('last three levels are winnable using legal income, six equipped cards and ordinary shots',()=>{

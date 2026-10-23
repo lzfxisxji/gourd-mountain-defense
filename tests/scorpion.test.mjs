@@ -25,6 +25,6 @@ test('scorpion attack before/after impact resumes exactly once through saves',()
 });
 test('scorpion takes ordinary damage, uses its own death sprite, and spawns in levels 9 and 10',()=>{
  const {g,e}=setup();g.damageEnemy(e,1800,'mine');assert.equal(e.hp,200);g.damageEnemy(e,200);g.step(.01);assert.equal(g.corpses[0].type,'scorpion');assert.equal(g.debris.length,0);
- for(const [id,cfg]of Object.entries(LEVELS)){const n=cfg.schedule.filter(s=>s.type==='scorpion').length;assert.equal(n,Number(id)>=9?2:0);}
+ for(const [id,cfg]of Object.entries(LEVELS).filter(([id])=>+id<=10)){const n=cfg.schedule.filter(s=>s.type==='scorpion').length;assert.equal(n,Number(id)>=9?2:0);}
  const battle=new Game(9),i=battle.cfg.schedule.findIndex(s=>s.type==='scorpion');battle.spawned=i;battle.time=battle.cfg.schedule[i].t-.01;battle.step(.02);assert.equal(battle.enemies.find(e=>e.type==='scorpion').hp,2000);
 });

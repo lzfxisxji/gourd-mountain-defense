@@ -4,6 +4,8 @@ export const FUTURE_CHARACTERS={};
 export const ALMANAC_CHARACTERS={...CHARACTERS,...FUTURE_CHARACTERS};
 const UNLOCK_COMPLETED={fire:0,vine:1,wall:2,nezha:3,pangolin:4,tall:5,water:6,seven:7,erwa:8,six:10};
 export function isCharacterUnlocked(id,completed,unlocks={}){
+ if(id==='shuke')return unlocks.shuke===true;
+ if(id==='beta')return unlocks.beta===true;
  if(id==='wukong')return unlocks.wukong===true;
  if(id==='blackcat')return unlocks.blackcat===true;
  return !!ALMANAC_CHARACTERS[id]&&ALMANAC_CHARACTERS[id].implemented!==false&&completed>=(UNLOCK_COMPLETED[id]??Infinity);

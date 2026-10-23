@@ -18,6 +18,6 @@ test('water slows enraged centipede; enlarged form and pending attack survive sa
  g.energy=100;g.place('wall',2,5);e.x=GRID.x+5.5*GRID.cw+50;advance(g,.5);const h=restoreGame(snapshotGame(g));assert.equal(monsterScale(h.enemies[0]),2);advance(g,2);advance(h,2);assert.deepEqual(snapshotGame(g),snapshotGame(h));
 });
 test('centipede spawns only from 1-8; lethal burst has no surviving transformation or frog debris',()=>{
- for(const [level,cfg]of Object.entries(LEVELS))assert.equal(cfg.schedule.filter(s=>s.type==='centipede').length,+level>=8?2:0);
+ for(const [level,cfg]of Object.entries(LEVELS).filter(([id])=>+id<=10))assert.equal(cfg.schedule.filter(s=>s.type==='centipede').length,+level>=8?2:0);
  const {g,e}=setup();g.damageEnemy(e,1800,'mine');g.step(.01);assert.equal(g.enemies.length,0);assert.equal(g.corpses[0].type,'centipede');assert.equal(g.debris.length,0);
 });
