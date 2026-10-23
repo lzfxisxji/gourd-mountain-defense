@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Game,CHARACTERS,LEVELS} from '../src/engine.js';
-import {emptySave,snapshotGame,restoreGame,encodeSave,decodeSave} from '../src/storage.js';
+import {emptySave,snapshotGame,restoreGame,encodeSave,decodeSave,decodeSaveProgress} from '../src/storage.js';
 const advance=(g,n)=>{for(let i=0;i<Math.round(n*20);i++)g.step(.05);};
 test('battle roundtrip preserves all entities, timers, random sequence and new actor IDs',()=>{
  const g=new Game(2);g.place('vine',2,0);advance(g,24);g.enemies[0].slowLeft=7;g.enemies[0].slowFactor=.5;
@@ -29,5 +29,22 @@ test('water shooter uses water projectiles and slow attack cadence; existing two
 });
 test('snapshot restores an in-flight water ball and its remaining slow effect',()=>{
  const g=new Game(1);advance(g,18);g.enemies[0].x=900;g.enemies[0].slowLeft=4.2;g.enemies[0].slowFactor=.5;g.bullets.push({x:400,row:2,damage:20,kind:'water'});
- const h=restoreGame(snapshotGame(g));assert.equal(h.enemies[0].slowLeft,4.2);assert.equal(h.bullets[0].kind,'water');advance(g,1);advance(h,1);assert.deepEqual(snapshotGame(g),snapshotGame(h));
+ const h=restoreGame(snapshotGame(g));assert.equal(h.enemies[0].slowLeft,4.2);assert.equal(h.bullets[0].kind,'water');advance(g,1);advance(h,1);assert.deepEqual(snapshotGame(h),snapshotGame(g));
+});
+test('broken battle keeps level progress instead of discarding the whole save',()=>{
+ const good={...emptySave(),completed:7,coins:1234,slots:7,unlocks:{blackcat:true,wukong:false,beta:true,shuke:false},checkin:{claimed:3,lastDate:'2026-10-21'}};
+ const broken=JSON.stringify({...good,battle:{version:1,level:1,energy:-5}});
+ assert.throws(()=>decodeSave(broken));
+ const partial=decodeSaveProgress(broken);
+ assert.equal(partial.completed,7);assert.equal(partial.coins,1234);assert.equal(partial.slots,7);assert.equal(partial.battle,null);
+ assert.equal(partial.unlocks.blackcat,true);assert.equal(partial.unlocks.beta,true);assert.equal(partial.checkin.claimed,3);assert.equal(partial.checkin.lastDate,'2026-10-21');
+ assert.deepEqual(decodeSave(encodeSave(partial)),partial);
+});
+test('progress fallback rejects unusable files and normalises inconsistent fields',()=>{
+ assert.throws(()=>decodeSaveProgress('{oops'));
+ assert.throws(()=>decodeSaveProgress(JSON.stringify({version:2,completed:99})));
+ const partial=decodeSaveProgress(JSON.stringify({version:2,completed:3,coins:-5,slots:99,unlocks:{blackcat:'yes'},checkin:{claimed:2,lastDate:null}}));
+ assert.equal(partial.coins,0);assert.equal(partial.slots,6);assert.equal(partial.unlocks.blackcat,false);
+ assert.equal(partial.checkin.claimed,0);assert.equal(partial.checkin.lastDate,null);
+ assert.deepEqual(decodeSave(encodeSave(partial)),partial);
 });

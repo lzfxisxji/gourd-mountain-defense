@@ -6,7 +6,7 @@ import {Game,GRID,CHARACTERS,LEVELS,MONSTERS,monsterScale,isCharmed} from './eng
 import {LAST_LEVEL,adventureLevel} from './levels.js';
 import {POSES,WORLD_SCALE,plantPose,enemyPose} from './animation.js';
 import {ALMANAC_CHARACTERS,isCharacterUnlocked} from './roster.js';
-import {SAVE_KEY,emptySave,decodeSave,encodeSave,snapshotGame,restoreGame} from './storage.js';
+import {SAVE_KEY,emptySave,decodeSave,decodeSaveProgress,encodeSave,snapshotGame,restoreGame} from './storage.js';
 const $=s=>document.querySelector(s), canvas=$('#board'),ctx=canvas.getContext('2d'),W=1672,H=941;
 const map=new Image(),sprites=new Image();map.src='assets/maps/chapter-01-wood-clean-v2.png';sprites.src='assets/sprites/characters-clean.png';
 const caveMap=new Image();caveMap.src='assets/maps/chapter-02-snake-cave-v1.png';
@@ -14,11 +14,19 @@ const frog=new Image();frog.src='assets/sprites/frog-trident.png';
 const animationImages=Object.fromEntries([...new Set(Object.values(POSES).map(p=>p.file))].map(file=>{const img=new Image();img.src=`assets/animation/${file}.png`;return[file,img];}));
 let bookPreview=null;
 let game=null,selected=null,shovel=false,paused=false,last=0,hover=null,muted=false,audio=null,toastTimer,waveUntil=0,ended=false,aimingId=null;
-let storageIssue=false,lastAutoSave=0,speed=1;
-function readSave(){try{const raw=localStorage.getItem(SAVE_KEY);const result=raw?decodeSave(raw):emptySave();storageIssue=false;return result;}catch{storageIssue=true;return emptySave();}}
+let storageIssue=false,battleIssue=false,lastAutoSave=0,speed=1;
+function readSave(){
+ try{const raw=localStorage.getItem(SAVE_KEY);const result=raw?decodeSave(raw):emptySave();storageIssue=false;battleIssue=false;return result;}
+ catch{
+  // Keep progress when only the battle snapshot is broken, and never overwrite the unreadable file.
+  try{const raw=localStorage.getItem(SAVE_KEY);if(raw){const partial=decodeSaveProgress(raw);storageIssue=false;battleIssue=true;return partial;}}
+  catch{}
+  storageIssue=true;battleIssue=false;return emptySave();
+ }
+}
 let save=readSave();muted=save.settings.muted;$('#sound').textContent=`音效：${muted?'关':'开'}`;refreshAdventure();
 function refreshAdventure(){speed=save.settings.speed??1;$('#battleSpeed').value=speed;$('#battleSpeed').setAttribute('aria-valuetext',`${speed}倍速`);$('#speedLabel').textContent=`${speed}×`;$('.menu-coins').textContent=`${save.coins.toLocaleString()} 金币`;$('#wallet strong').textContent=save.coins.toLocaleString();$('.checkin-button small').textContent=save.checkin?.claimed===7?'七日已领完':canClaimDaily(save)?'今日可领取':'今日已签到';const name=LEVELS[adventureLevel(save)].name;$('.stage-number').textContent=name;$('.adventure').setAttribute('aria-label',`闯关模式${name}`);}
-function persist(){try{save.settings={muted,speed};localStorage.setItem(SAVE_KEY,encodeSave(save));refreshAdventure();return true;}catch{toast('保存失败：浏览器存储不可用或存档数据无效');return false;}}
+function persist(){try{if(storageIssue)return false;save.settings={muted,speed};localStorage.setItem(SAVE_KEY,encodeSave(save));refreshAdventure();return true;}catch{toast('保存失败：浏览器存储不可用或存档数据无效');return false;}}
 function checkpoint(notify=false){if(!game||game.status!=='playing')return false;save.battle=snapshotGame(game);save.updatedAt=new Date().toISOString();const ok=persist();if(ok){lastAutoSave=game.time;if(notify)toast('战局已保存，可以从主菜单读取继续');}return ok;}
 function resumeBattle(){try{const restored=restoreGame(save.battle);game=restored;selected=null;shovel=false;paused=true;ended=false;lastAutoSave=game.time;waveUntil=0;aimingId=null;$('#menu').hidden=true;$('#play').hidden=false;$('#levelLabel').textContent=`${game.cfg.region}　${game.cfg.name}`;makeCards();updateHud();draw();modal('战局已恢复',`<p>${game.cfg.name} · 已进行 ${Math.floor(game.time)} 秒<br>灵气 ${game.energy} · 场上 ${game.plants.length} 个角色</p>`,[{text:'继续守护',action:()=>{closeModal();paused=false;}},{text:'返回菜单',secondary:true,action:menu}]);}catch{toast('无法恢复这个战局，现有存档未被覆盖');}}
 function openSaveMenu(){

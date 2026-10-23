@@ -65,4 +65,18 @@ export function decodeSave(raw){
  if(data.battle!==null){const g=restoreGame(data.battle);if(g.cards.some(id=>!isCharacterUnlocked(id,data.completed,rosterUnlocks)&&(g.loadout!==null||!LEVELS[g.level].cards.includes(id)))||(g.loadout&&g.cards.length>(data.slots??6)))throw Error('上阵角色尚未解锁或超过卡槽');}
  return{version:2,completed:data.completed,coins:data.coins??0,slots:data.slots??6,unlocks:{blackcat:unlocks.blackcat,wukong:unlocks.wukong??false,beta:unlocks.beta??false,shuke:shukeUnlocked},checkin:{claimed:checkin.claimed,lastDate:checkin.lastDate},updatedAt:typeof data.updatedAt==='string'?data.updatedAt:null,battle:data.battle?clone(data.battle):null,settings:{muted:data.settings.muted,speed:data.settings.speed??1}};
 }
+// Progressive fallback: a broken battle snapshot must not discard level progress.
+export function decodeSaveProgress(raw){
+ if(typeof raw!=='string'||raw.length>1000000)throw Error('存档文件过大');
+ const data=JSON.parse(raw);
+ if(!data||!integer(data.completed,0,LAST_LEVEL))throw Error('通关记录无效');
+ const coins=integer(data.coins??0,0,1000000000)?data.coins:0;
+ const slots=integer(data.slots??6,6,10)?data.slots:6;
+ const muted=data.settings&&typeof data.settings.muted==='boolean'?data.settings.muted:false;
+ const speed=[1,1.5,2].includes(data.settings?.speed)?data.settings.speed:1;
+ const owned=data.unlocks&&typeof data.unlocks==='object'&&!Array.isArray(data.unlocks)?data.unlocks:{};
+ const stamp=data.checkin&&typeof data.checkin.lastDate==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(data.checkin.lastDate)&&!Number.isNaN(Date.parse(data.checkin.lastDate+'T00:00:00Z'))?data.checkin.lastDate:null;
+ const claimed=stamp&&integer(data.checkin.claimed??0,1,7)?data.checkin.claimed:0;
+ return{version:2,completed:data.completed,coins,slots,unlocks:{blackcat:owned.blackcat===true,wukong:owned.wukong===true,beta:owned.beta===true||claimed>=2,shuke:owned.shuke===true||claimed>=4},checkin:{claimed,lastDate:claimed?stamp:null},updatedAt:typeof data.updatedAt==='string'?data.updatedAt:null,battle:null,settings:{muted,speed}};
+}
 export function encodeSave(data){const raw=JSON.stringify(data);decodeSave(raw);return raw;}
