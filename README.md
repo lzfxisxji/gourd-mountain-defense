@@ -78,3 +78,5 @@
 本地执行 `npm run build:exe` 或双击“重新打包EXE.cmd”生成安装版，输出在 `release/版本号`。`npm run build:portable` 生成免安装版。后续递增版本号、提交源码并推送对应 `v版本号` 标签，GitHub Actions 自动构建并发布安装包、blockmap、latest.yml。详见 [桌面版说明](desktop/使用说明.md)。
 
 桌面验证：`node tests/desktop-smoke.cjs release/0.2.0/win-unpacked/GourdMountainDefense.exe`；升级验证：`node tests/update-e2e.cjs`，均使用独立测试存档。更新实现采用 [electron-updater 官方流程](https://www.electron.build/docs/features/auto-update/)，客户端不包含 GitHub 发布凭据。
+
+1-10 新开战局为传送带 Boss 关：跳过选卡与灵气经济，开场提供五张四娃及防御/水弹/双发卡，此后每四秒按平衡轮转供卡，最多八张，满带等待。用掉一张才能部署一个角色，不受卡槽升级与种植冷却限制。保留蛇精及护卫波次。供卡与战局共用游戏时间，支持暂停、倍速和存档恢复；旧版 1-10 战局按普通模式恢复，重新开始才切换传送带。

@@ -4,7 +4,7 @@ import {Game} from '../src/engine.js';
 import {advanceBattle} from '../src/timing.js';
 import {emptySave,decodeSave,encodeSave} from '../src/storage.js';
 test('1x/1.5x/2x advance simulation, cooldowns and freeze duration together',()=>{
- for(const speed of [1,1.5,2]){const g=new Game(10);g.place('fire',2,0);g.plants[0].freezeLeft=8;for(let i=0;i<20;i++)advanceBattle(g,.05,speed);assert.ok(Math.abs(g.time-speed)<1e-8);assert.ok(Math.abs(g.cooldowns.fire-(7.5-speed))<1e-8);assert.ok(Math.abs(g.plants[0].freezeLeft-(8-speed))<1e-8);}
+ for(const speed of [1,1.5,2]){const g=new Game(10);g.battleMode='normal';g.place('fire',2,0);g.plants[0].freezeLeft=8;for(let i=0;i<20;i++)advanceBattle(g,.05,speed);assert.ok(Math.abs(g.time-speed)<1e-8);assert.ok(Math.abs(g.cooldowns.fire-(7.5-speed))<1e-8);assert.ok(Math.abs(g.plants[0].freezeLeft-(8-speed))<1e-8);}
 });
 test('2x uses bounded substeps and never advances finished games',()=>{
  const steps=[],g={status:'playing',step(dt){steps.push(dt);}};advanceBattle(g,.05,2);assert.deepEqual(steps,[.05,.05]);g.status='won';advanceBattle(g,1,2);assert.equal(steps.length,2);

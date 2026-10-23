@@ -1,5 +1,5 @@
 export const GRID={x:337,y:280,cw:124,rh:116,cols:9,rows:5};
-import {LEVELS} from './levels.js';
+import {LEVELS,BELT_SEQUENCE} from './levels.js';
 export {LEVELS} from './levels.js';
 export const CHARACTERS={wukong:{name:'孙悟空',cost:300,hp:300,cooldown:7.5,role:'staff',source:'大闹天宫',pose:'wukongIdle',interval:5,damage:50,duration:5},blackcat:{name:'黑猫警长',cost:225,hp:300,cooldown:7.5,role:'shooter',source:'黑猫警长',pose:'blackcatIdle',interval:1.4,damage:20,burstCount:2,burstGap:.14,globalTarget:true},six:{name:'六娃',cost:50,hp:300,cooldown:30,role:'ambusher',source:'葫芦兄弟',pose:'sixIdle',damage:1800,rangeTiles:1.25},seven:{name:'七娃',cost:150,hp:300,cooldown:7.5,role:'absorber',source:'葫芦兄弟',pose:'sevenIdle',refineTime:42,rangeTiles:1},erwa:{name:'二娃',cost:200,hp:300,cooldown:7.5,role:'shooter',source:'葫芦兄弟',pose:'erwaIdle',interval:1.4,damage:20,burstCount:2,burstGap:.14},nezha:{name:'哪吒',cost:150,hp:300,cooldown:50,damage:1800,role:'caster',pose:'nezhaIdle',source:'哪吒闹海'},pangolin:{name:'穿山甲',cost:25,hp:300,cooldown:30,armTime:14,damage:1800,role:'mine',pose:'pangolinReady',source:'葫芦兄弟'},tall:{name:'大娃',cost:125,hp:8000,cooldown:30,role:'wall',pose:'tallIdle',source:'葫芦兄弟'},water:{name:'五娃',cost:175,hp:300,cooldown:7.5,interval:1.4,damage:20,slowDuration:10,slowFactor:.5,pose:'waterIdle',role:'shooter',source:'葫芦兄弟'},fire:{name:'四娃',cost:100,hp:300,cooldown:7.5,interval:1.4,damage:20,sprite:0,role:'shooter',source:'葫芦兄弟'},vine:{name:'小葫芦藤',cost:50,hp:300,cooldown:7.5,interval:24,sprite:1,role:'producer',source:'葫芦兄弟'},wall:{name:'三娃',cost:50,hp:4000,cooldown:30,sprite:3,role:'wall',source:'葫芦兄弟'}};
 export const MONSTERS={centipede:{name:'蜈蚣精',hp:600,speed:18,attack:200,source:'葫芦兄弟'},scorpion:{name:'蝎子大王',hp:2000,speed:8,attack:2000,attackInterval:3,attackImpact:.9,source:'葫芦兄弟'},snake:{name:'蛇精',hp:1000,speed:10,attack:100,blastLimit:500,freezeInterval:40,freezeDuration:8,source:'葫芦兄弟'},bat:{name:'蝙蝠精',hp:300,speed:20,attack:0,flying:true,source:'葫芦兄弟'},frog:{name:'青蛙精',hp:200,speed:17,attack:100,source:'葫芦兄弟'}};
@@ -10,16 +10,17 @@ const LAWN_RIGHT=GRID.x+GRID.cols*GRID.cw;
 const onLawn=e=>e.x<=LAWN_RIGHT&&e.x>=GRID.x;
 export class Game{
  constructor(level=1,random=null){
-  this.loadout=null;this.slotCapacity=6;this.nextId=0;this.level=level;this.cfg=LEVELS[level];this.randomState=(Math.random()*4294967295)>>>0||1;this.random=random??(()=>{let x=this.randomState;x^=x<<13;x^=x>>>17;x^=x<<5;this.randomState=x>>>0;return this.randomState/4294967296;});this.time=0;this.energy=150;
+  this.loadout=null;this.slotCapacity=6;this.nextId=0;this.level=level;this.cfg=LEVELS[level];this.battleMode=this.cfg.conveyor?'conveyor':'normal';this.belt=this.conveyor?['fire','fire','fire','fire','fire','wall','water','erwa']:[];this.beltClock=4;this.beltCursor=0;this.randomState=(Math.random()*4294967295)>>>0||1;this.random=random??(()=>{let x=this.randomState;x^=x<<13;x^=x>>>17;x^=x<<5;this.randomState=x>>>0;return this.randomState/4294967296;});this.time=0;this.energy=150;
   this.plants=[];this.enemies=[];this.bullets=[];this.orbs=[];this.effects=[];this.debris=[];this.corpses=[];this.spells=[];this.coins=[];this.staves=[];
   this.cooldowns={};this.mowers=Array.from({length:5},(_,row)=>({row,x:270,active:false,used:false}));
   this.spawned=0;this.kills=0;this.nextSky=3;this.status='playing';this.waveShown=false;this.events=[];
  }
- get cards(){return this.loadout??this.cfg.cards;}
- equip(cards,capacity=6){if(!Number.isInteger(capacity)||capacity<6||capacity>10||!Array.isArray(cards)||!cards.length||cards.length>capacity||new Set(cards).size!==cards.length||cards.some(id=>!CHARACTERS[id]))throw Error('上阵阵容无效');this.loadout=[...cards];this.slotCapacity=capacity;}
+ get conveyor(){return this.battleMode==='conveyor';}
+ get cards(){return this.conveyor?this.belt:this.loadout??this.cfg.cards;}
+ equip(cards,capacity=6){if(!Number.isInteger(capacity)||capacity<6||capacity>10||!Array.isArray(cards)||!cards.length||cards.length>capacity||new Set(cards).size!==cards.length||cards.some(id=>!CHARACTERS[id]))throw Error('上阵阵容无效');this.battleMode='normal';this.belt=[];this.loadout=[...cards];this.slotCapacity=capacity;}
  emit(type,data={}){this.events.push({type,...data});}
  reserveIds(max){this.nextId=Math.max(this.nextId,max);}
- place(type,row,col){const c=CHARACTERS[type];if(this.status!=='playing'||!c||!this.cards.includes(type)||!this.cfg.rows.includes(row)||col<0||col>=9||this.plants.some(p=>p.row===row&&p.col===col)||this.energy<c.cost||(this.cooldowns[type]||0)>0)return false;this.energy-=c.cost;this.cooldowns[type]=c.cooldown;this.plants.push({id:++this.nextId,type,row,col,hp:c.hp,timer:c.role==='producer'?8:c.role==='staff'?c.interval:.4,action:0,windup:0,hit:0,defending:false,spent:false,retireLeft:0,freezeLeft:0,refineLeft:0,burstLeft:0,burstDelay:0,armLeft:c.armTime||0,armed:c.role!=='mine'});this.emit('plant');return true;}
+ place(type,row,col){const c=CHARACTERS[type];if(this.status!=='playing'||!c||!this.cards.includes(type)||!this.cfg.rows.includes(row)||col<0||col>=9||this.plants.some(p=>p.row===row&&p.col===col)||(!this.conveyor&&(this.energy<c.cost||(this.cooldowns[type]||0)>0)))return false;if(this.conveyor)this.belt.splice(this.belt.indexOf(type),1);else{this.energy-=c.cost;this.cooldowns[type]=c.cooldown;}this.plants.push({id:++this.nextId,type,row,col,hp:c.hp,timer:c.role==='producer'?8:c.role==='staff'?c.interval:.4,action:0,windup:0,hit:0,defending:false,spent:false,retireLeft:0,freezeLeft:0,refineLeft:0,burstLeft:0,burstDelay:0,armLeft:c.armTime||0,armed:c.role!=='mine'});this.emit('plant');return true;}
  remove(row,col){if(this.status!=='playing')return false;const n=this.plants.length;this.plants=this.plants.filter(p=>p.row!==row||p.col!==col);return this.plants.length<n;}
  collect(id){if(this.status!=='playing')return false;const i=this.orbs.findIndex(o=>o.id===id);if(i<0)return false;this.energy+=25;this.orbs.splice(i,1);this.emit('collect');return true;}
  collectCoin(id){if(this.status!=='playing')return 0;const i=this.coins.findIndex(c=>c.id===id);if(i<0)return 0;const [coin]=this.coins.splice(i,1);return coin.value;}
@@ -46,11 +47,11 @@ export class Game{
   this.spells.push({id:++this.nextId,kind:'fire',fromX:GRID.x+(p.col+.5)*GRID.cw,fromRow:p.row,row,col,age:0,life:1.25,delay:.35,hit:false,damage:CHARACTERS.nezha.damage});this.emit('cast');return true;
  }
  step(dt){
-  if(this.status!=='playing')return;this.time+=dt;for(const e of this.enemies)e.slowLeft=Math.max(0,(e.slowLeft||0)-dt);
+  if(this.status!=='playing')return;this.time+=dt;if(this.conveyor){this.beltClock=Math.max(0,this.beltClock-dt);if(this.beltClock<=1e-8&&this.belt.length<8){this.belt.push(BELT_SEQUENCE[this.beltCursor++%BELT_SEQUENCE.length]);this.beltClock=4;}}for(const e of this.enemies)e.slowLeft=Math.max(0,(e.slowLeft||0)-dt);
   for(const a of [...this.debris,...this.corpses,...this.spells])a.age+=dt;
   this.debris=this.debris.filter(a=>a.age<a.life);this.corpses=this.corpses.filter(a=>a.age<a.life);this.spells=this.spells.filter(a=>a.age<a.life);
   for(const k in this.cooldowns)this.cooldowns[k]=Math.max(0,this.cooldowns[k]-dt);
-  if(this.time>=this.nextSky){this.orb(430+this.random()*850,330+this.random()*450,true);this.nextSky=this.time+7+this.random()*3;}
+  if(!this.conveyor&&this.time>=this.nextSky){this.orb(430+this.random()*850,330+this.random()*450,true);this.nextSky=this.time+7+this.random()*3;}
   while(this.spawned<this.cfg.schedule.length&&this.time>=this.cfg.schedule[this.spawned].t){const s=this.cfg.schedule[this.spawned++];this.enemies.push({id:++this.nextId,row:s.row,x:1600+this.random()*40,type:s.type??'frog',hp:MONSTERS[s.type??'frog'].hp,hit:0,eating:false,damaged:false,attackClock:0,attackHasHit:false,phase:this.random()*6,...(s.type==='snake'?{freezeClock:MONSTERS.snake.freezeInterval,castLeft:0}:{})});this.emit('spawn');}
   if(!this.waveShown&&this.time>=this.cfg.wave){this.waveShown=true;this.emit('wave');}
   for(const p of this.plants)p.freezeLeft=Math.max(0,(p.freezeLeft||0)-dt);

@@ -84,3 +84,7 @@ canvas.reward{background:none;width:120px;height:142px;display:block}.book-list{
 .update-dialog{width:min(560px,85vw);max-height:80vh;overflow:auto;border:5px solid #8c693c;border-radius:18px;padding:26px;background:#f2e4ba;color:#4d351e;box-shadow:0 12px 60px #0007;font-family:KaiTi,serif}
 .update-dialog::backdrop{background:#102b24a8}
 .update-dialog h2{margin-top:0}.update-dialog progress{width:100%;accent-color:#66873d}.update-notes{white-space:pre-wrap;font:16px/1.7 KaiTi,serif;max-height:30vh;overflow:auto}.update-actions{display:flex;gap:10px;flex-wrap:wrap}.update-actions button{padding:10px 15px;border:2px solid #735230;border-radius:7px;background:#688344;color:#fff4ce;font:16px KaiTi,serif;cursor:pointer}.update-actions button:disabled{opacity:.5}.update-dialog [hidden]{display:none!important}
+#hud.conveyor-hud{grid-template-columns:minmax(0,1fr) 10%}
+.conveyor-hud #cards{padding:3px;background:repeating-linear-gradient(110deg,#495b3b 0 16px,#71815a 16px 20px);border:3px solid #5f482d;border-radius:6px;animation:belt-track 2s linear infinite}
+.conveyor-hud .card{animation:belt-arrive .35s ease-out}.conveyor-hud .card-cost{font-size:clamp(8px,.75cqw,13px)}
+@keyframes belt-track{to{background-position:-42px 0}}@keyframes belt-arrive{from{transform:translateX(20px);opacity:.5}to{transform:translateX(0);opacity:1}}

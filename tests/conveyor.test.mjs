@@ -1,0 +1,13 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {Game} from '../src/engine.js';import {snapshotGame,restoreGame,emptySave,encodeSave,decodeSave} from '../src/storage.js';
+const step=(g,t)=>{for(let i=0;i<Math.round(t*20);i++)g.step(.05);};
+test('boss conveyor consumes a card only on valid placement, without energy or cooldown',()=>{const g=new Game(10);g.energy=0;assert.equal(g.belt.length,8);assert.ok(g.place('fire',2,0));assert.equal(g.energy,0);assert.equal(g.cooldowns.fire,undefined);assert.equal(g.belt.length,7);assert.equal(g.place('fire',2,0),false);assert.equal(g.belt.length,7);assert.ok(g.place('fire',1,0));assert.equal(g.place('vine',0,0),false);step(g,4);assert.equal(g.belt.length,7);assert.equal(g.orbs.length,0);step(g,80);assert.equal(g.belt.length,8);});
+test('belt, supply phase and deterministic future supply survive save; legacy boss stays normal',()=>{const g=new Game(10);g.place('fire',2,0);step(g,2);const h=restoreGame(snapshotGame(g));step(g,5);step(h,5);assert.deepEqual(snapshotGame(g),snapshotGame(h));const s=emptySave();s.completed=9;s.battle=snapshotGame(g);assert.equal(decodeSave(encodeSave(s)).battle.battleMode,'conveyor');const old=snapshotGame(g);for(const key of ['battleMode','belt','beltClock','beltCursor'])delete old[key];assert.equal(restoreGame(old).conveyor,false);const invalid=snapshotGame(g);invalid.belt=['wukong'];assert.throws(()=>restoreGame(invalid));});
+test('normal chapter levels still require energy and cooldown',()=>{const g=new Game(9);g.energy=0;assert.equal(g.place('fire',2,0),false);g.energy=200;assert.ok(g.place('fire',2,0));assert.equal(g.place('fire',1,0),false);});
+test('conveyor boss is winnable with supplied cards and legal placements',()=>{for(const seed of [7,71,711]){const g=new Game(10);g.randomState=seed;for(let tick=0;tick<16000&&g.status==='playing';tick++){
+ for(const type of [...g.belt]){
+  let rows=[0,1,2,3,4];if(['fire','water','erwa'].includes(type))rows.sort((a,b)=>g.plants.filter(p=>p.row===a&&['fire','water','erwa'].includes(p.type)).length-g.plants.filter(p=>p.row===b&&['fire','water','erwa'].includes(p.type)).length);
+  if(type==='nezha'){const target=g.enemies.filter(e=>e.x<1450&&e.x>337).sort((a,b)=>b.hp-a.hp)[0];if(!target)continue;const col=Math.max(0,Math.min(8,Math.floor((target.x-337)/124)));for(const c of [col,col-1,col+1])if(g.place(type,target.row,c)){g.castFire(g.plants.at(-1).id,target.row,col);break;}continue;}
+  const cols=['fire','water','erwa'].includes(type)?[1,2,3,0,4]:type==='pangolin'?[7,6,8]:[5,6,7];let placed=false;for(const row of rows){for(const col of cols)if(g.place(type,row,col)){placed=true;break;}if(placed)break;}
+ }g.step(.05);
+ }assert.equal(g.status,'won',`seed ${seed}`);}});

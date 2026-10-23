@@ -3,7 +3,7 @@ import {Game,GRID,CHARACTERS,LEVELS,MONSTERS} from './engine.js';
 import {LAST_LEVEL} from './levels.js';
 export const SAVE_KEY='gourd-mountain-save-v1';
 const ARRAYS=['plants','enemies','bullets','orbs','effects','debris','corpses','mowers','spells','coins','staves'];
-const VALUES=['level','time','energy','cooldowns','spawned','kills','nextSky','waveShown','randomState','nextId','loadout','slotCapacity'];
+const VALUES=['level','time','energy','cooldowns','spawned','kills','nextSky','waveShown','randomState','nextId','loadout','slotCapacity','battleMode','belt','beltClock','beltCursor'];
 const clone=v=>JSON.parse(JSON.stringify(v));
 const finite=(x,min,max)=>Number.isFinite(x)&&x>=min&&x<=max;
 const integer=(x,min,max)=>Number.isInteger(x)&&finite(x,min,max);
@@ -16,7 +16,7 @@ export function restoreGame(data){
  if(!data||data.version!==1||!LEVELS[data.level])throw Error('不支持的战局');
  data={...data,spells:data.spells??[],coins:data.coins??[],staves:data.staves??[]};
  const cfg=LEVELS[data.level];
- data={loadout:null,slotCapacity:6,...data};const deck=data.loadout??cfg.cards;
+ data={battleMode:'normal',belt:[],beltClock:4,beltCursor:0,loadout:null,slotCapacity:6,...data};if(!['normal','conveyor'].includes(data.battleMode)||!Array.isArray(data.belt)||data.belt.length>8||!finite(data.beltClock,0,4)||!integer(data.beltCursor,0,1000000)||data.belt.some(id=>!['fire','water','wall','erwa','nezha','tall','pangolin','seven'].includes(id))||(data.battleMode==='conveyor'&&(data.level!==10||data.loadout!==null)))throw Error('传送带存档无效');const deck=data.loadout??cfg.cards;
  if(data.loadout!==null){const probe=new Game(data.level);probe.equip(deck,data.slotCapacity);}
  else if(!integer(data.slotCapacity,6,10))throw Error('卡槽无效');
  if(!integer(data.nextId,0,1000000000))throw Error('对象编号无效');

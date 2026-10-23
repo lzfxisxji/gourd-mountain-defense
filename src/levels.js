@@ -28,3 +28,6 @@ export function adventureLevel(save){
 }
 
 for(const [level,indices] of [[8,[20,36]],[9,[18,36]],[10,[16,34]]])for(const i of indices)LEVELS[level].schedule[i].type='centipede';
+
+LEVELS[10].conveyor=true;
+export const BELT_SEQUENCE=['fire','water','fire','wall','erwa','fire','nezha','tall','water','pangolin','fire','erwa','seven','fire','nezha'];
