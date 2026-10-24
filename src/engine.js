@@ -12,14 +12,14 @@ const LAWN_RIGHT=GRID.x+GRID.cols*GRID.cw;
 const onLawn=e=>e.x<=LAWN_RIGHT&&e.x>=GRID.x;
 export class Game{
  constructor(level=1,random=null){
-  this.loadout=null;this.slotCapacity=6;this.nextId=0;this.level=level;this.cfg=LEVELS[level];this.battleMode=this.cfg.conveyor?'conveyor':'normal';this.belt=[];this.beltPositions=[];this.beltClock=5;this.beltCursor=0;this.randomState=(Math.random()*4294967295)>>>0||1;this.random=random??(()=>{let x=this.randomState;x^=x<<13;x^=x>>>17;x^=x<<5;this.randomState=x>>>0;return this.randomState/4294967296;});this.time=0;this.energy=150;
+  this.challenge=null;this.vases=[];this.loadout=null;this.slotCapacity=6;this.nextId=0;this.level=level;this.cfg=LEVELS[level];this.battleMode=this.cfg.conveyor?'conveyor':'normal';this.belt=[];this.beltPositions=[];this.beltClock=5;this.beltCursor=0;this.randomState=(Math.random()*4294967295)>>>0||1;this.random=random??(()=>{let x=this.randomState;x^=x<<13;x^=x>>>17;x^=x<<5;this.randomState=x>>>0;return this.randomState/4294967296;});this.time=0;this.energy=150;
   this.plants=[];this.enemies=[];this.bullets=[];this.orbs=[];this.effects=[];this.debris=[];this.corpses=[];this.spells=[];this.coins=[];this.staves=[];
   this.cooldowns={};this.mowers=Array.from({length:5},(_,row)=>({row,x:270,active:false,used:false}));
   this.spawned=0;this.kills=0;this.nextSky=3;this.status='playing';this.waveShown=false;this.events=[];
  }
  pickArtilleryTarget(){
   const targets=this.enemies.filter(e=>isHostile(e)&&onLawn(e));let best=null;
-  for(let row=0;row<GRID.rows;row++)for(let col=0;col<GRID.cols;col++){
+  for(let row=0;row<GRID.rows;row++)for(let col=0;col<this.cols;col++){
    const x=GRID.x+(col+.5)*GRID.cw,group=targets.filter(e=>Math.abs(e.row-row)<=1&&Math.abs(e.x-x)<GRID.cw*1.5);
    if(!group.length)continue;
    const distance=group.reduce((sum,e)=>sum+(e.row-row)**2+((e.x-x)/GRID.cw)**2,0);
@@ -27,6 +27,12 @@ export class Game{
   }
   return best;
  }
+ get cols(){return this.cfg.cols??GRID.cols;}
+ get freePlacement(){return this.conveyor;}
+ isCellBlocked(){return false;}
+ canFinish(){return true;}
+ supplyCard(){return BELT_SEQUENCE[this.beltCursor++%BELT_SEQUENCE.length];}
+ consumeCard(type){if(this.conveyor){const i=this.belt.indexOf(type);this.belt.splice(i,1);this.beltPositions.splice(i,1);}else{this.energy-=CHARACTERS[type].cost;this.cooldowns[type]=CHARACTERS[type].cooldown;}}
  get conveyor(){return this.battleMode==='conveyor';}
  get cards(){return this.conveyor?this.belt:this.loadout??this.cfg.cards;}
  equip(cards,capacity=6){if(!Number.isInteger(capacity)||capacity<6||capacity>10||!Array.isArray(cards)||!cards.length||cards.length>capacity||new Set(cards).size!==cards.length||cards.some(id=>!CHARACTERS[id]))throw Error('上阵阵容无效');this.battleMode='normal';this.belt=[];this.beltPositions=[];this.loadout=[...cards];this.slotCapacity=capacity;}
@@ -43,7 +49,7 @@ export class Game{
   }
   this.emit('dropImpact',{kind:spell.kind});
  }
- place(type,row,col){const c=CHARACTERS[type];if(this.status!=='playing'||!c||!this.cards.includes(type)||!this.cfg.rows.includes(row)||col<0||col>=9||this.plants.some(p=>p.row===row&&p.col===col)||(!this.conveyor&&(this.energy<c.cost||(this.cooldowns[type]||0)>0)))return false;if(this.conveyor){const index=this.belt.indexOf(type);this.belt.splice(index,1);this.beltPositions.splice(index,1);}else{this.energy-=c.cost;this.cooldowns[type]=c.cooldown;}this.plants.push({id:++this.nextId,type,row,col,hp:c.hp,timer:c.role==='producer'?8:['staff','artillery','airdrop'].includes(c.role)?c.interval:.4,action:0,windup:0,hit:0,defending:false,spent:false,retireLeft:0,freezeLeft:0,refineLeft:0,burstLeft:0,burstDelay:0,armLeft:c.armTime||0,armed:c.role!=='mine'});this.emit('plant');return true;}
+ place(type,row,col){const c=CHARACTERS[type];if(this.status!=='playing'||!c||!this.cards.includes(type)||!this.cfg.rows.includes(row)||!Number.isInteger(col)||col<0||col>=this.cols||this.isCellBlocked(row,col)||this.plants.some(p=>p.row===row&&p.col===col)||(!this.freePlacement&&(this.energy<c.cost||(this.cooldowns[type]||0)>0)))return false;this.consumeCard(type);this.plants.push({id:++this.nextId,type,row,col,hp:c.hp,timer:c.role==='producer'?8:['staff','artillery','airdrop'].includes(c.role)?c.interval:.4,action:0,windup:0,hit:0,defending:false,spent:false,retireLeft:0,freezeLeft:0,refineLeft:0,burstLeft:0,burstDelay:0,armLeft:c.armTime||0,armed:c.role!=='mine'});this.emit('plant');return true;}
  remove(row,col){if(this.status!=='playing')return false;const n=this.plants.length;this.plants=this.plants.filter(p=>p.row!==row||p.col!==col);return this.plants.length<n;}
  collect(id){if(this.status!=='playing')return false;const i=this.orbs.findIndex(o=>o.id===id);if(i<0)return false;this.energy+=25;this.orbs.splice(i,1);this.emit('collect');return true;}
  collectCoin(id){if(this.status!=='playing')return 0;const i=this.coins.findIndex(c=>c.id===id);if(i<0)return 0;const [coin]=this.coins.splice(i,1);return coin.value;}
@@ -64,17 +70,17 @@ export class Game{
   this.bullets.push({x:GRID.x+(p.col+.5)*GRID.cw+37,row:p.row,damage:c.damage,lift:target?.type==='bat'?40:0,kind:p.type==='water'?'water':p.type==='erwa'?'gold':'fire'});p.action=.28;this.emit('shoot',{id:p.id});return true;
  }
  castFire(id,row,col){
-  if(this.status!=='playing'||!this.cfg.rows.includes(row)||!Number.isInteger(col)||col<0||col>=GRID.cols)return false;
+  if(this.status!=='playing'||!this.cfg.rows.includes(row)||!Number.isInteger(col)||col<0||col>=this.cols)return false;
   const p=this.plants.find(p=>p.id===id&&p.type==='nezha'&&p.hp>0&&!p.spent&&!(p.freezeLeft>0));if(!p)return false;
   p.spent=true;p.action=.6;p.retireLeft=.6;
   this.spells.push({id:++this.nextId,kind:'fire',fromX:GRID.x+(p.col+.5)*GRID.cw,fromRow:p.row,row,col,age:0,life:1.25,delay:.35,hit:false,damage:CHARACTERS.nezha.damage});this.emit('cast');return true;
  }
  step(dt){
-  if(this.status!=='playing')return;this.time+=dt;if(this.conveyor){for(let i=0;i<this.belt.length;i++){const stop=i===0?0:this.beltPositions[i-1]+1;this.beltPositions[i]=Math.max(stop,this.beltPositions[i]-.8*dt);}this.beltClock=Math.max(0,this.beltClock-dt);if(this.beltClock<=1e-8&&this.belt.length<8){this.belt.push(BELT_SEQUENCE[this.beltCursor++%BELT_SEQUENCE.length]);this.beltPositions.push(8);this.beltClock=5;}}for(const e of this.enemies){e.slowLeft=Math.max(0,(e.slowLeft||0)-dt);e.netLeft=Math.max(0,(e.netLeft||0)-dt);const wasCharmed=isCharmed(e);e.charmLeft=Math.max(0,(e.charmLeft||0)-dt);if(wasCharmed&&!isCharmed(e)){e.eating=false;e.attackClock=0;e.attackHasHit=false;}}
+  if(this.status!=='playing')return;this.time+=dt;if(this.conveyor){for(let i=0;i<this.belt.length;i++){const stop=i===0?0:this.beltPositions[i-1]+1;this.beltPositions[i]=Math.max(stop,this.beltPositions[i]-.8*dt);}this.beltClock=Math.max(0,this.beltClock-dt);if(this.beltClock<=1e-8&&this.belt.length<8){this.belt.push(this.supplyCard());this.beltPositions.push(8);this.beltClock=5;}}for(const e of this.enemies){e.slowLeft=Math.max(0,(e.slowLeft||0)-dt);e.netLeft=Math.max(0,(e.netLeft||0)-dt);const wasCharmed=isCharmed(e);e.charmLeft=Math.max(0,(e.charmLeft||0)-dt);if(wasCharmed&&!isCharmed(e)){e.eating=false;e.attackClock=0;e.attackHasHit=false;}}
   for(const a of [...this.debris,...this.corpses,...this.spells])a.age+=dt;
   this.debris=this.debris.filter(a=>a.age<a.life);this.corpses=this.corpses.filter(a=>a.age<a.life);this.spells=this.spells.filter(a=>a.age<a.life);
   for(const k in this.cooldowns)this.cooldowns[k]=Math.max(0,this.cooldowns[k]-dt);
-  if(!this.conveyor&&this.time>=this.nextSky){this.orb(430+this.random()*850,330+this.random()*450,true);this.nextSky=this.time+7+this.random()*3;}
+  if(!this.freePlacement&&this.time>=this.nextSky){this.orb(430+this.random()*850,330+this.random()*450,true);this.nextSky=this.time+7+this.random()*3;}
   while(this.spawned<this.cfg.schedule.length&&this.time>=this.cfg.schedule[this.spawned].t){const s=this.cfg.schedule[this.spawned++];this.enemies.push({id:++this.nextId,row:s.row,x:1600+this.random()*40,type:s.type??'frog',hp:MONSTERS[s.type??'frog'].hp,hit:0,eating:false,damaged:false,attackClock:0,attackHasHit:false,phase:this.random()*6,...(s.type==='snake'?{freezeClock:MONSTERS.snake.freezeInterval,castLeft:0}:{})});this.emit('spawn');}
   if(!this.waveShown&&this.time>=this.cfg.wave){this.waveShown=true;this.emit('wave');}
   for(const p of this.plants)p.freezeLeft=Math.max(0,(p.freezeLeft||0)-dt);
@@ -187,6 +193,6 @@ export class Game{
   for(const c of this.coins)c.life-=dt;this.coins=this.coins.filter(c=>c.life>0);
   for(const f of this.effects)f.life-=dt;this.effects=this.effects.filter(f=>f.life>0);
   // Death effects finish before a victory overlay freezes the field.
-  if(this.status==='playing'&&this.spawned===this.cfg.schedule.length&&!this.enemies.length&&!this.corpses.length&&!this.spells.length&&!this.plants.some(p=>p.type==='seven'&&p.action>0)){this.status='won';this.emit('won');}
+  if(this.status==='playing'&&this.canFinish()&&this.spawned===this.cfg.schedule.length&&!this.enemies.length&&!this.corpses.length&&!this.spells.length&&!this.plants.some(p=>p.type==='seven'&&p.action>0)){this.status='won';this.emit('won');}
  }
 }

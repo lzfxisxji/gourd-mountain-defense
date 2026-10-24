@@ -7,6 +7,10 @@ export const POSES={
  betaFire:{file:'beta-tank-poses',rect:[895,80,881,780],pivot:[1250,850],scale:.16},
  centipedeWalk:{file:'centipede-poses',rect:[20,165,765,775],pivot:[580,925],scale:.16,clip:[[20,165],[765,165],[765,740],[785,740],[785,940],[20,940]]},
  centipedeChop:{file:'centipede-poses',rect:[765,65,765,875],pivot:[1300,925],scale:.16,clip:[[765,65],[1530,65],[1530,940],[785,940],[785,740],[765,740]]},
+ scorpionWalkA:{file:'scorpion-walk-cycle',rect:[0,0,627,627],pivot:[315,603],scale:.26},
+ scorpionWalkB:{file:'scorpion-walk-cycle',rect:[627,0,627,627],pivot:[942,610],scale:.26},
+ scorpionWalkC:{file:'scorpion-walk-cycle',rect:[0,627,627,627],pivot:[315,1223],scale:.26},
+ scorpionWalkD:{file:'scorpion-walk-cycle',rect:[627,627,627,627],pivot:[942,1223],scale:.26},
  scorpionWalk:{file:'scorpion-poses',rect:[10,165,565,590],pivot:[355,745],scale:.26},
  scorpionWindup:{file:'scorpion-poses',rect:[650,175,555,585],pivot:[945,745],scale:.26,clip:[[650,175],[1205,175],[1205,590],[1130,670],[1065,710],[1065,760],[650,760]]},
  scorpionSlash:{file:'scorpion-poses',rect:[1065,350,735,410],pivot:[1575,745],scale:.26,clip:[[1205,350],[1800,350],[1800,760],[1065,760],[1065,710],[1130,670],[1205,590]]},
@@ -80,7 +84,12 @@ export function plantPose(p){
 export function enemyPose(e,time){
  if(e.netLeft>0){time=0;e={...e,eating:false,phase:0};}
  if(e.type==='centipede')return e.eating&&e.attackClock>=.25&&e.attackClock<.65?'centipedeChop':'centipedeWalk';
- if(e.type==='scorpion')return !e.eating?'scorpionWalk':e.attackClock<.9?'scorpionWindup':e.attackClock<1.45?'scorpionSlash':'scorpionWalk';
+ if(e.type==='scorpion'){
+  if(e.eating)return e.attackClock<.9?'scorpionWindup':e.attackClock<1.45?'scorpionSlash':'scorpionWalk';
+  // Distance-driven gait stops with the actor and naturally follows water slowdown / charm reversal.
+  const stride=Math.floor((Number.isFinite(e.x)?-e.x*.3125:time*2.5)+(e.phase||0));
+  return ['scorpionWalkA','scorpionWalkB','scorpionWalkC','scorpionWalkD'][((stride%4)+4)%4];
+ }
  if(e.type==='snake')return e.castLeft>0||(e.eating&&e.attackClock>=.25&&e.attackClock<.64)?'snakeCast':'snakeIdle';
  if(e.type==='bat')return Math.floor(time*5+(e.phase||0))%2?'batFlyB':'batFlyA';
  if(e.eating&&e.attackClock>=.25&&e.attackClock<.64)return e.damaged?'frogBite':'frogAttack';

@@ -1,22 +1,24 @@
+import {ChallengeGame,CHALLENGES,BOX_POOL,VASE_ROLE_COUNTS,VASE_ENEMY_COUNTS} from './challenges.js';
 import {isCharacterUnlocked} from './roster.js';
 import {Game,GRID,CHARACTERS,LEVELS,MONSTERS} from './engine.js';
 import {LAST_LEVEL} from './levels.js';
 export const SAVE_KEY='gourd-mountain-save-v1';
-const ARRAYS=['plants','enemies','bullets','orbs','effects','debris','corpses','mowers','spells','coins','staves'];
-const VALUES=['level','time','energy','cooldowns','spawned','kills','nextSky','waveShown','randomState','nextId','loadout','slotCapacity','battleMode','belt','beltPositions','beltClock','beltCursor'];
+const ARRAYS=['plants','enemies','bullets','orbs','effects','debris','corpses','mowers','spells','coins','staves','vases'];
+const VALUES=['level','time','energy','cooldowns','spawned','kills','nextSky','waveShown','randomState','nextId','loadout','slotCapacity','battleMode','belt','beltPositions','beltClock','beltCursor','challenge'];
 const clone=v=>JSON.parse(JSON.stringify(v));
 const finite=(x,min,max)=>Number.isFinite(x)&&x>=min&&x<=max;
 const integer=(x,min,max)=>Number.isInteger(x)&&finite(x,min,max);
-export const emptySave=()=>({version:2,completed:0,coins:0,slots:6,unlocks:{blackcat:false,wukong:false,beta:false,shuke:false},checkin:{claimed:0,lastDate:null},updatedAt:null,battle:null,settings:{muted:false,speed:1}});
+export const emptySave=()=>({version:2,completed:0,coins:0,slots:6,unlocks:{blackcat:false,wukong:false,beta:false,shuke:false},checkin:{claimed:0,lastDate:null},updatedAt:null,battle:null,challengeBattle:null,settings:{muted:false,speed:1}});
 export function snapshotGame(game){
  if(!game||game.status!=='playing')return null;
  const data={version:1};for(const k of [...ARRAYS,...VALUES])data[k]=clone(game[k]);return data;
 }
 export function restoreGame(data){
- if(!data||data.version!==1||!LEVELS[data.level])throw Error('不支持的战局');
+ if(!data||data.version!==1||!LEVELS[data.level]||(data.challenge!=null&&(!CHALLENGES[data.challenge]||data.level!==10)))throw Error('不支持的战局');
  data={...data,spells:data.spells??[],coins:data.coins??[],staves:data.staves??[]};
- const cfg=LEVELS[data.level];
- data={battleMode:'normal',belt:[],beltClock:5,beltCursor:0,loadout:null,slotCapacity:6,...data};if(!['normal','conveyor'].includes(data.battleMode)||!Array.isArray(data.belt)||data.belt.length>8||!finite(data.beltClock,0,5)||!integer(data.beltCursor,0,1000000)||data.belt.some(id=>!['fire','water','wall','erwa','nezha','tall','pangolin','seven'].includes(id))||(data.battleMode==='conveyor'&&(data.level!==10||data.loadout!==null)))throw Error('传送带存档无效');data.beltPositions=data.beltPositions??data.belt.map((_,i)=>i);if(!Array.isArray(data.beltPositions)||data.beltPositions.length!==data.belt.length||data.beltPositions.some((x,i)=>!finite(x,0,8)||(i>0&&x<data.beltPositions[i-1]+1-1e-6)))throw Error('传送带位置无效');const deck=data.loadout??cfg.cards;
+ const cfg=data.challenge?CHALLENGES[data.challenge]:LEVELS[data.level];
+ data={challenge:null,vases:[],battleMode:'normal',belt:[],beltClock:5,beltCursor:0,loadout:null,slotCapacity:6,...data};if(!['normal','conveyor'].includes(data.battleMode)||!Array.isArray(data.belt)||data.belt.length>(data.challenge==='vases'?15:8)||!finite(data.beltClock,0,5)||!integer(data.beltCursor,0,1000000)||data.belt.some(id=>!(data.challenge==='boxes'?['box',...BOX_POOL]:data.challenge==='vases'?Object.keys(VASE_ROLE_COUNTS):['fire','water','wall','erwa','nezha','tall','pangolin','seven']).includes(id))||(data.battleMode==='conveyor'&&(data.level!==10||data.loadout!==null)))throw Error('传送带存档无效');data.beltPositions=data.beltPositions??(data.challenge==='vases'?[]:data.belt.map((_,i)=>i));if(!Array.isArray(data.beltPositions)||data.beltPositions.length!==(data.challenge==='vases'?0:data.belt.length)||data.beltPositions.some((x,i)=>!finite(x,0,8)||(i>0&&x<data.beltPositions[i-1]+1-1e-6)))throw Error('传送带位置无效');const deck=data.loadout??cfg.cards;
+ if(data.challenge&&(data.loadout!==null||data.battleMode!==(data.challenge==='boxes'?'conveyor':'normal')))throw Error('挑战阵容无效');
  if(data.loadout!==null){const probe=new Game(data.level);probe.equip(deck,data.slotCapacity);}
  else if(!integer(data.slotCapacity,6,10))throw Error('卡槽无效');
  if(!integer(data.nextId,0,1000000000))throw Error('对象编号无效');
@@ -25,7 +27,14 @@ export function restoreGame(data){
  // Reject non-finite numeric values, unknown nested objects and oversized files before mutation.
  const scan=(v,depth=0)=>{if(depth>6)throw Error('存档结构无效');if(typeof v==='number'&&!Number.isFinite(v))throw Error('存档数值无效');if(v&&typeof v==='object')for(const [k,x]of Object.entries(v)){if(['__proto__','prototype','constructor'].includes(k))throw Error('存档字段无效');scan(x,depth+1);}};scan(data);
  const ids=new Set(),positions=new Set();
- for(const p of data.plants){const c=CHARACTERS[p.type],pos=`${p.row}:${p.col}`;if(!c||!deck.includes(p.type)||!cfg.rows.includes(p.row)||!integer(p.col,0,8)||!integer(p.id,1,1000000000)||ids.has(p.id)||positions.has(pos)||!finite(p.hp,.001,c.hp)||!finite(p.timer,-86400,120)||!finite(p.windup,0,1)||!finite(p.action,0,2)||!finite(p.hit,0,2)||typeof p.defending!=='boolean')throw Error('角色数据无效');ids.add(p.id);positions.add(pos);}
+ if(data.challenge!=='vases'&&data.vases.length)throw Error('罐子数据无效');
+ for(const v of data.vases){const pos=`${v.row}:${v.col}`;if(!integer(v.id,1,1000000000)||ids.has(v.id)||!cfg.rows.includes(v.row)||!integer(v.col,3,7)||!['role','enemy'].includes(v.kind)||!(v.kind==='role'?VASE_ROLE_COUNTS:VASE_ENEMY_COUNTS)[v.type]||positions.has(pos))throw Error('罐子数据无效');ids.add(v.id);positions.add(pos);}
+ if(data.challenge==='vases'){
+  if(data.vases.length>25||data.spawned!==10-data.vases.filter(v=>v.kind==='enemy').length||data.kills+data.enemies.length!==data.spawned)throw Error('砸罐子进度无效');
+  for(const [type,count]of Object.entries(VASE_ROLE_COUNTS))if(data.belt.filter(id=>id===type).length+data.vases.filter(v=>v.kind==='role'&&v.type===type).length+data.plants.filter(p=>p.type===type).length>count)throw Error('罐子角色数量无效');
+  for(const [type,count]of Object.entries(VASE_ENEMY_COUNTS))if(data.vases.filter(v=>v.kind==='enemy'&&v.type===type).length+data.enemies.filter(e=>e.type===type).length>count)throw Error('罐子妖怪数量无效');
+ }
+ for(const p of data.plants){const c=CHARACTERS[p.type],pos=`${p.row}:${p.col}`;if(!c||!deck.includes(p.type)||!cfg.rows.includes(p.row)||!integer(p.col,0,(cfg.cols??9)-1)||!integer(p.id,1,1000000000)||ids.has(p.id)||positions.has(pos)||!finite(p.hp,.001,c.hp)||!finite(p.timer,-86400,120)||!finite(p.windup,0,1)||!finite(p.action,0,2)||!finite(p.hit,0,2)||typeof p.defending!=='boolean')throw Error('角色数据无效');ids.add(p.id);positions.add(pos);}
  for(const p of data.plants){if(!finite(p.refineLeft??0,0,42)||!integer(p.burstLeft??0,0,1)||!finite(p.burstDelay??0,0,.14))throw Error('角色技能计时无效');if(!finite(p.freezeLeft??0,0,8))throw Error('冻结状态无效');if(p.spent!==undefined&&(typeof p.spent!=='boolean'||!finite(p.retireLeft,0,1)))throw Error('技能状态无效');if(p.type==='pangolin'&&(!finite(p.armLeft,0,14)||typeof p.armed!=='boolean'))throw Error('埋伏状态无效');}
  for(const spell of data.spells){if(!integer(spell.id,1,1000000000)||ids.has(spell.id)||!['fire','mine','ambush','shell','net','stone','mushroom'].includes(spell.kind)||!cfg.rows.includes(spell.row)||!cfg.rows.includes(spell.fromRow)||!integer(spell.col,0,8)||!finite(spell.fromX,GRID.x,GRID.x+GRID.cw*9)||!finite(spell.age,0,2)||!finite(spell.life,.1,2)||!finite(spell.delay,0,1)||typeof spell.hit!=='boolean'||!finite(spell.damage,spell.kind==='mushroom'?0:1,1800))throw Error('范围技能无效');ids.add(spell.id);}
  for(const s of data.spells)if(['net','stone','mushroom'].includes(s.kind)&&(!finite(s.targetX,GRID.x,GRID.x+GRID.cw*9)||s.row!==s.fromRow||!integer(s.ownerId,1,1000000000)))throw Error('空投数据无效');
@@ -44,7 +53,7 @@ export function restoreGame(data){
  for(const k of ['effects','debris','corpses'])for(const a of data[k])if(!finite(a.x,0,2000)||!finite(a.life,0,5)||(k==='effects'?!finite(a.y,0,1000):!cfg.rows.includes(a.row)||!finite(a.age,0,5)||(k==='debris'&&!['arm','head'].includes(a.kind))))throw Error('动画数据无效');
  if(data.mowers.length!==GRID.rows||data.mowers.some((m,i)=>m.row!==i||!finite(m.x,0,2000)||typeof m.used!=='boolean'||typeof m.active!=='boolean'))throw Error('葫芦数据无效');
  if(!data.cooldowns||typeof data.cooldowns!=='object'||Array.isArray(data.cooldowns)||Object.entries(data.cooldowns).some(([k,v])=>!CHARACTERS[k]||!finite(v,0,CHARACTERS[k].cooldown)))throw Error('冷却数据无效');
- const g=new Game(data.level);for(const k of [...ARRAYS,...VALUES])g[k]=clone(data[k]);g.status='playing';g.events=[];
+ const g=data.challenge?new ChallengeGame(data.challenge):new Game(data.level);for(const k of [...ARRAYS,...VALUES])g[k]=clone(data[k]);g.status='playing';g.events=[];
  // Resume actor IDs beyond all active entities and pending skills.
  g.reserveIds(Math.max(0,...ids));return g;
 }
@@ -62,8 +71,9 @@ export function decodeSave(raw){
  // Existing players who already passed day four receive the new reward once on migration.
  const shukeUnlocked=unlocks.shuke===true||checkin.claimed>=4;
  const rosterUnlocks={...unlocks,shuke:shukeUnlocked};
- if(data.battle!==null){const g=restoreGame(data.battle);if(g.cards.some(id=>!isCharacterUnlocked(id,data.completed,rosterUnlocks)&&(g.loadout!==null||!LEVELS[g.level].cards.includes(id)))||(g.loadout&&g.cards.length>(data.slots??6)))throw Error('上阵角色尚未解锁或超过卡槽');}
- return{version:2,completed:data.completed,coins:data.coins??0,slots:data.slots??6,unlocks:{blackcat:unlocks.blackcat,wukong:unlocks.wukong??false,beta:unlocks.beta??false,shuke:shukeUnlocked},checkin:{claimed:checkin.claimed,lastDate:checkin.lastDate},updatedAt:typeof data.updatedAt==='string'?data.updatedAt:null,battle:data.battle?clone(data.battle):null,settings:{muted:data.settings.muted,speed:data.settings.speed??1}};
+ if(data.battle!==null){const g=restoreGame(data.battle);if(g.challenge)throw Error('闯关战局无效');if(g.cards.some(id=>!isCharacterUnlocked(id,data.completed,rosterUnlocks)&&(g.loadout!==null||!LEVELS[g.level].cards.includes(id)))||(g.loadout&&g.cards.length>(data.slots??6)))throw Error('上阵角色尚未解锁或超过卡槽');}
+ if(data.challengeBattle!=null&&!restoreGame(data.challengeBattle).challenge)throw Error('挑战战局无效');
+ return{version:2,completed:data.completed,coins:data.coins??0,slots:data.slots??6,unlocks:{blackcat:unlocks.blackcat,wukong:unlocks.wukong??false,beta:unlocks.beta??false,shuke:shukeUnlocked},checkin:{claimed:checkin.claimed,lastDate:checkin.lastDate},updatedAt:typeof data.updatedAt==='string'?data.updatedAt:null,battle:data.battle?clone(data.battle):null,challengeBattle:data.challengeBattle?clone(data.challengeBattle):null,settings:{muted:data.settings.muted,speed:data.settings.speed??1}};
 }
 // Progressive fallback: a broken battle snapshot must not discard level progress.
 export function decodeSaveProgress(raw){
@@ -77,6 +87,6 @@ export function decodeSaveProgress(raw){
  const owned=data.unlocks&&typeof data.unlocks==='object'&&!Array.isArray(data.unlocks)?data.unlocks:{};
  const stamp=data.checkin&&typeof data.checkin.lastDate==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(data.checkin.lastDate)&&!Number.isNaN(Date.parse(data.checkin.lastDate+'T00:00:00Z'))?data.checkin.lastDate:null;
  const claimed=stamp&&integer(data.checkin.claimed??0,1,7)?data.checkin.claimed:0;
- return{version:2,completed:data.completed,coins,slots,unlocks:{blackcat:owned.blackcat===true,wukong:owned.wukong===true,beta:owned.beta===true||claimed>=2,shuke:owned.shuke===true||claimed>=4},checkin:{claimed,lastDate:claimed?stamp:null},updatedAt:typeof data.updatedAt==='string'?data.updatedAt:null,battle:null,settings:{muted,speed}};
+ return{version:2,completed:data.completed,coins,slots,unlocks:{blackcat:owned.blackcat===true,wukong:owned.wukong===true,beta:owned.beta===true||claimed>=2,shuke:owned.shuke===true||claimed>=4},checkin:{claimed,lastDate:claimed?stamp:null},updatedAt:typeof data.updatedAt==='string'?data.updatedAt:null,battle:null,challengeBattle:null,settings:{muted,speed}};
 }
 export function encodeSave(data){const raw=JSON.stringify(data);decodeSave(raw);return raw;}
